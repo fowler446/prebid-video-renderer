@@ -2,12 +2,97 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + TS</title>
+    <title>Prebid Video Renderer</title>
+
+    <script src="/dist/main.js"></script>
+    <script async src="//www.googletagservices.com/tag/js/gpt.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/prebid.js@latest/dist/not-for-prod/prebid.js"></script>
+    <script>
+      const adContainerSizes = [
+        [1, 1],
+      ];
+      const PREBID_TIMEOUT = 3000;
+      const FAILSAFE_TIMEOUT = 3500;
+
+      const adUnits = [
+        {
+          code: '/19968336/prebid_outstream_adunit_1',
+          mediaTypes: {
+            video: {
+              context: 'outstream',
+              playerSize: [640, 390],
+              mimes: ['video/mp4'],
+              protocols: [1, 2, 3, 4, 5, 6, 7, 8],
+              playbackmethod: [2],
+              skip: 1,
+              useCacheKey: true,
+            }
+          },
+          bids: [
+            {
+              bidder: 'appnexus',
+              params: {
+                placementId: 13232385,
+              },
+            },
+          ]
+        },
+      ];
+
+      const googletag = window.googletag || {};
+      googletag.cmd = googletag.cmd || [];
+      googletag.cmd.push(function() {
+        googletag.pubads().disableInitialLoad();
+      });
+
+      const pbjs = window.pbjs || {};
+      pbjs.que = pbjs.que || [];
+
+      pbjs.que.push(function() {
+        pbjs.addAdUnits(adUnits);
+        pbjs.requestBids({
+          bidsBackHandler: initAdserver,
+          timeout: PREBID_TIMEOUT
+        });
+      });
+
+      function initAdserver(bids) {
+        if (pbjs.initAdserverSet) return;
+        pbjs.initAdserverSet = true;
+
+        googletag.cmd.push(function() {
+          pbjs.que.push(function() {
+            pbjs.setTargetingForGPTAsync();
+            googletag.pubads().refresh();
+          });
+        });
+      }
+
+      // in case PBJS doesn't load
+      setTimeout(function() {
+        initAdserver();
+      }, FAILSAFE_TIMEOUT);
+
+      googletag.cmd.push(function() {
+        googletag.defineSlot('/19968336/prebid_outstream_adunit_1', adContainerSizes, 'adContainer').addService(googletag.pubads());
+        googletag.pubads().enableSingleRequest();
+        googletag.enableServices();
+      });
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <h1>Prebid Video Renderer</h1>
+
+      <div id="adContainer" style="width: 300px; height: 250px;">
+        <script type="text/javascript">
+          googletag.cmd.push(function() {
+            googletag.display("adContainer");
+          });
+        </script>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
